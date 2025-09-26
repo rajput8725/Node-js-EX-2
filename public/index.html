@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cards REST API - Interactive Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .operation {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button.delete { background-color: #dc3545; }
+        button.delete:hover { background-color: #c82333; }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .response {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .cards-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            background: white;
+        }
+        .card.hearts { border-left: 4px solid red; }
+        .card.diamonds { border-left: 4px solid red; }
+        .card.clubs { border-left: 4px solid black; }
+        .card.spades { border-left: 4px solid black; }
+        h1 { color: #333; }
+        h3 { color: #666; margin-top: 0; }
+    </style>
+</head>
+<body>
+    <h1>🃏 Cards REST API - Interactive Interface</h1>
+    
+    <!-- List All Cards -->
+    <div class="container">
+        <div class="operation">
+            <h3>📋 List All Cards (GET /cards)</h3>
+            <button onclick="listCards()">Get All Cards</button>
+            <div id="cards-container"></div>
+            <div class="response" id="list-response"></div>
+        </div>
+    </div>
+
+    <!-- Add New Card -->
+    <div class="container">
+        <div class="operation">
+            <h3>➕ Add New Card (POST /cards)</h3>
+            <select id="suit">
+                <option value="">Select Suit</option>
+                <option value="Hearts">Hearts ❤️</option>
+                <option value="Diamonds">Diamonds ♦️</option>
+                <option value="Clubs">Clubs ♣️</option>
+                <option value="Spades">Spades ♠️</option>
+            </select>
+            <select id="value">
+                <option value="">Select Value</option>
+                <option value="Ace">Ace</option>
+                <option value="King">King</option>
+                <option value="Queen">Queen</option>
+                <option value="Jack">Jack</option>
+                <option value="10">10</option>
+                <option value="9">9</option>
+                <option value="8">8</option>
+                <option value="7">7</option>
+                <option value="6">6</option>
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+            </select>
+            <button onclick="addCard()">Add Card</button>
+            <div class="response" id="add-response"></div>
+        </div>
+    </div>
+
+    <!-- Get Card by ID -->
+    <div class="container">
+        <div class="operation">
+            <h3>🔍 Get Card by ID (GET /cards/:id)</h3>
+            <input type="number" id="get-id" placeholder="Enter card ID" min="1">
+            <button onclick="getCard()">Get Card</button>
+            <div class="response" id="get-response"></div>
+        </div>
+    </div>
+
+    <!-- Delete Card -->
+    <div class="container">
+        <div class="operation">
+            <h3>🗑️ Delete Card (DELETE /cards/:id)</h3>
+            <input type="number" id="delete-id" placeholder="Enter card ID" min="1">
+            <button class="delete" onclick="deleteCard()">Delete Card</button>
+            <div class="response" id="delete-response"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000';
+
+        // Helper function to display responses
+        function displayResponse(elementId, response, data) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(data || response, null, 2);
+        }
+
+        // Helper function to show cards visually
+        function displayCards(cards) {
+            const container = document.getElementById('cards-container');
+            if (!cards || cards.length === 0) {
+                container.innerHTML = '<p>No cards found</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <h4>Current Cards (${cards.length}):</h4>
+                <div class="cards-list">
+                    ${cards.map(card => `
+                        <div class="card ${card.suit.toLowerCase()}">
+                            <strong>ID: ${card.id}</strong><br>
+                            ${card.value} of ${card.suit}<br>
+                            <button onclick="getCardById(${card.id})" style="font-size: 12px; padding: 5px 8px;">View</button>
+                            <button class="delete" onclick="deleteCardById(${card.id})" style="font-size: 12px; padding: 5px 8px;">Delete</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // List all cards
+        async function listCards() {
+            try {
+                const response = await fetch(`${API_BASE}/cards`);
+                const data = await response.json();
+                displayResponse('list-response', response, data);
+                if (data.success && data.data) {
+                    displayCards(data.data);
+                }
+            } catch (error) {
+                displayResponse('list-response', null, { error: error.message });
+            }
+        }
+
+        // Add new card
+        async function addCard() {
+            const suit = document.getElementById('suit').value;
+            const value = document.getElementById('value').value;
+            
+            if (!suit || !value) {
+                alert('Please select both suit and value');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/cards`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ suit, value })
+                });
+                const data = await response.json();
+                displayResponse('add-response', response, data);
+                
+                // Clear form and refresh cards list
+                document.getElementById('suit').value = '';
+                document.getElementById('value').value = '';
+                listCards();
+            } catch (error) {
+                displayResponse('add-response', null, { error: error.message });
+            }
+        }
+
+        // Get card by ID
+        async function getCard() {
+            const id = document.getElementById('get-id').value;
+            if (!id) {
+                alert('Please enter a card ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/cards/${id}`);
+                const data = await response.json();
+                displayResponse('get-response', response, data);
+            } catch (error) {
+                displayResponse('get-response', null, { error: error.message });
+            }
+        }
+
+        // Delete card
+        async function deleteCard() {
+            const id = document.getElementById('delete-id').value;
+            if (!id) {
+                alert('Please enter a card ID');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to delete card with ID ${id}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/cards/${id}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                displayResponse('delete-response', response, data);
+                
+                // Clear form and refresh cards list
+                document.getElementById('delete-id').value = '';
+                listCards();
+            } catch (error) {
+                displayResponse('delete-response', null, { error: error.message });
+            }
+        }
+
+        // Helper functions for card actions
+        function getCardById(id) {
+            document.getElementById('get-id').value = id;
+            getCard();
+        }
+
+        function deleteCardById(id) {
+            document.getElementById('delete-id').value = id;
+            deleteCard();
+        }
+
+        // Load cards on page load
+        document.addEventListener('DOMContentLoaded', listCards);
+    </script>
+</body>
+</html>

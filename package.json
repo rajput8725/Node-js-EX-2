@@ -1,0 +1,26 @@
+{
+  "name": "cards-api",
+  "version": "1.0.0",
+  "description": "REST API for Playing Card Collection Using Express.js",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --runInBand"
+  },
+  "keywords": ["express", "cards", "rest", "api"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4",
+    "nodemon": "^3.1.4"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
+}
